@@ -22,7 +22,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private double secondOperand = 0;
     private boolean isNewInput = true;
 
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,14 +69,54 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    private void handleInput(String buttonText) {
+    private void handleInput(String input) {
+        if (isNewInput) {
+            currentInput = input;
+            isNewInput = false;
+        } else {
+            currentInput += input;
+        }
+        updateDisplay();
     }
 
     private void clearInput() {
-
+        currentInput = "";
+        operator = "";
+        firstOperand = 0;
+        secondOperand = 0;
+        isNewInput = true;
+        updateDisplay();
     }
 
     private void calculateResult() {
+        if (!isNewInput) {
+            String expression = currentInput;
+            try {
+                // Use JavaScript eval() to evaluate the expression
+                WebView webView = new WebView(this);
+                webView.getSettings().setJavaScriptEnabled(true);
+                webView.addJavascriptInterface(new Object() {
+                    @JavascriptInterface
+                    public void processHTML(String html) {
+                        // Process the result returned from JavaScript
+                        currentInput = html;
+                        isNewInput = true;
+                        updateDisplay();
+                    }
+                }, "Android");
 
+                webView.evaluateJavascript("javascript:Android.processHTML(eval('" + expression + "'))", null);
+            } catch (Exception e) {
+                currentInput = "Error: Invalid expression";
+                isNewInput = true;
+                updateDisplay();
+            }
+        }
+    }
+
+
+
+    private void updateDisplay() {
+        textView.setText(currentInput);
     }
 }
